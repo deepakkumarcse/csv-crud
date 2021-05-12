@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User - CRUD </title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.1.8/css/fixedHeader.bootstrap.min.css">
+    {#    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.7/css/responsive.bootstrap.min.css">#}
+
+</head>
+<body>
+
+<div class="container-fluid">
+    <h3 class="alert alert-info text-center">User CRUD Operation</h3>
+    <div class="row">
+        <div class="col-md-4">
+            <h5 class="alert alert-success text-center">Add / update user</h5>
+            <div class="text-right">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="button" class="btn btn-primary" id="btn_csv" value="Upload data from Excel">
+                </form>
+            </div>
+            <div style="border: 1px solid #333; padding: 15px; margin-top: 5px">
+                <form action="#" method="post" id="create_update">
+                    {% csrf_token %}
+                    <input type="text" style="display: none;" name="userId" id="userId">
+                    {{ form.as_p }}
+                    <input type="button" class="btn btn-success" id="btnsave" value="save">
+                </form>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h5 class="alert alert-success text-center">User List</h5>
+            <div class="table-responsive" style="border: 1px solid #333; padding: 15px">
+                <table class="table table-hover table-bordered" id="user_list_data_table">
+                    <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>name</th>
+                        <th>email</th>
+                        <th>phone</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tbody">
+                    {% for user in user_list %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.phone }}</td>
+                            <td>
+                                <input type="button" data-userid="{{ user.id }}" class="btn-edit btn btn-warning btn-sm"
+                                       value="Edit">
+                                <input type="button" data-userid="{{ user.id }}" class="btn-del btn btn-danger btn-sm"
+                                       value="Delete">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/proper.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.js' %}"></script>
+<script>
+    // upload data from csv
+    $('#btn_csv').click(function (){
+        output = ''
+        let csrf = $("input[name=csrfmiddlewaretoken]").val()
+        $.ajax({
+                url: "{% url 'upload_csv' %}",
+                method: "POST",
+                data:{csrfmiddlewaretoken:csrf},
+                success: function (data) {
+                    if (data.status == 200) {
+                        users = data.user_list
+                        alert(data.message)
+                        for (i = 0; i < users.length; i++) {
+                            output += "<tr><td>" + users[i].id + "</td>" +
+                                "<td>" + users[i].name + "</td>" +
+                                "<td>" + users[i].email + "</td>" +
+                                "<td>" + users[i].phone + "</td>" +
+                                "<td><input type='button' class='btn btn-warning btn-sm btn-edit' data-userid=" + users[i].id + " value='Edit'/>" +
+                                "<input type='button' class='btn btn-danger btn-sm btn-del' data-userid=" + users[i].id + " value='Delete'/>" +
+                                "</td></tr>"
+                        }
+                        $("#tbody").html(output)
+                    } else {
+                        alert(data.message)
+                    }
+
+                }
+            })
+    });
+
+    // insert data
+    $('#btnsave').click(function () {
+        output = ''
+        let user_id = $('#userId').val()
+        let name = $('#nameId').val();
+        let email = $('#emailId').val();
+        let phone = $('#phoneId').val();
+        let csrf = $("input[name=csrfmiddlewaretoken]").val()
+        if (name == '') {
+            console.log("please enter name")
+        } else if (email == '') {
+            console.log("please enter name")
+        } else if (phone == '') {
+            console.log("please enter name")
+        } else {
+            rowData = {user_id: user_id, name: name, email: email, phone: phone, csrfmiddlewaretoken: csrf};
+            $.ajax({
+                url: "{% url 'save' %}",
+                method: "POST",
+                data: rowData,
+                success: function (data) {
+                    if (data.status == 200) {
+                        users = data.user_list
+                        alert(data.message)
+                        for (i = 0; i < users.length; i++) {
+                            output += "<tr><td>" + users[i].id + "</td>" +
+                                "<td>" + users[i].name + "</td>" +
+                                "<td>" + users[i].email + "</td>" +
+                                "<td>" + users[i].phone + "</td>" +
+                                "<td><input type='button' class='btn btn-warning btn-sm btn-edit' data-userid=" + users[i].id + " value='Edit'/>" +
+                                "<input type='button' class='btn btn-danger btn-sm btn-del' data-userid=" + users[i].id + " value='Delete'/>" +
+                                "</td></tr>"
+                        }
+                        $("#tbody").html(output)
+                        $('form')[1].reset();
+                    } else {
+                        alert(data.message)
+                    }
+                }
+            })
+        }
+    });
+    // delete data
+    $('tbody').on("click", ".btn-del", function () {
+        let id = $(this).attr('data-userid')
+        let csrf = $("input[name=csrfmiddlewaretoken]").val()
+        deldata = {user_id: id, csrfmiddlewaretoken: csrf}
+        this_clicked = this
+        $.ajax({
+            url: "{% url 'delete' %}",
+            method: "POST",
+            data: deldata,
+            success: function (data) {
+                if (data.status == 200) {
+                    alert(data.message)
+                    $(this_clicked).closest("tr").fadeOut();
+                } else {
+                    alert(data.message)
+                }
+            }
+        })
+    });
+
+    // edit data
+
+    $('tbody').on("click", ".btn-edit", function () {
+        let id = $(this).attr('data-userid')
+        let csrf = $("input[name=csrfmiddlewaretoken]").val()
+        editdata = {user_id: id, csrfmiddlewaretoken: csrf}
+        $.ajax({
+            url: "{% url 'edit' %}",
+            method: "POST",
+            data: editdata,
+            dataType: 'json',
+            success: function (data) {
+                $('#userId').val(data.id)
+                $('#nameId').val(data.name)
+                $('#emailId').val(data.email)
+                $('#phoneId').val(data.phone)
+            }
+        })
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        var table = $('#user_list_data_table').DataTable({
+            responsive: true
+        });
+
+        new $.fn.dataTable.FixedHeader(table);
+    });
+</script>
+
+<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap.min.js"></script>
+<script src="https://cdn.datatables.net/fixedheader/3.1.8/js/dataTables.fixedHeader.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.2.7/js/dataTables.responsive.min.js"></script>
+{#<script src="https://cdn.datatables.net/responsive/2.2.7/js/responsive.bootstrap.min.js"></script>#}
+</body>
+</html>
